@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
     krn->setArg(0, bufferA);
     krn->setArg(1, bufferB);
     krn->setArg(2, bufferC);
+    krn->setArg(3, n);
 
     int *tableA = new int[n];
     int *tableB = new int[n];
@@ -91,7 +92,7 @@ int main(int argc, char **argv) {
     cerr << endl << endl;
 
     ev.wait();
-    cluDisplayEventMilliseconds("kernel time : ", ev);
+    cluDisplayEventMilliseconds("kernel time", ev);
 
 
     long long tm_start = cluCPUMilliseconds();
@@ -99,7 +100,7 @@ int main(int argc, char **argv) {
         tableC[i] = tableA[i] + tableB[i] ;
     }
     long long tm_stop = cluCPUMilliseconds();
-    cerr << "CPU time : " << (tm_stop - tm_start) << " msecs" << endl;
+    cerr << "[CPU time] " << (tm_stop - tm_start) << " msecs" << endl;
 
 
     //suppression de mémoire

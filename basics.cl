@@ -34,9 +34,10 @@ __kernel void method2(__global int *table, __global int *res, int k){
 
 __kernel void method3(__global int *table, __global int *res, int s){
 
-    int idSubCounter = get_global_id(0) / s;
+    int idSubCounter = get_global_id(0) % s;
 
-    atomic_add(&res[idSubCounter], 1);
+    atomic_add(&res[idSubCounter], table[get_global_id(0)]);
+//    atomic_add(&res[0], table[get_global_id(0)]);
 }
 
 // ----------------------------------------------------------

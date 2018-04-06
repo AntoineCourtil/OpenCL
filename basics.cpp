@@ -110,12 +110,16 @@ int main(int argc, char **argv) {
     ///#                     EXERCICE 2                     #
     ///######################################################
 
+    n = 1024*1024;
+    int k = 1024;
+    int s = 32;
+
 
     ///------------------- METHODE 1 ------------------------
 
     cl::Kernel *krnMethod1 = cluLoadKernel(prg, "method1");
 
-    n = 1024;
+
 
     cl::Buffer buffer_(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
     cl::Buffer res_(*clu_Context, CL_MEM_READ_WRITE, sizeof(int));
@@ -125,7 +129,7 @@ int main(int argc, char **argv) {
 
     //Init du tableau
     for (int i = 0; i < n; i++) {
-        table_[i] = i;
+        table_[i] = 1;
     }
 
     krnMethod1->setArg(0, buffer_);
@@ -138,7 +142,7 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueWriteBuffer(res_, false, 0, sizeof(int), nullptr);
     clu_Queue->finish();
 
-    clu_Queue->enqueueNDRangeKernel(*krnMethod1, cl::NullRange, cl::NDRange(n), cl::NDRange(32));
+    clu_Queue->enqueueNDRangeKernel(*krnMethod1, cl::NullRange, cl::NDRange(n), cl::NDRange(32), 0, &ev);
     clu_Queue->finish();
 
     clu_Queue->enqueueReadBuffer(res_, false, 0, sizeof(int), &resGPU);
@@ -165,8 +169,7 @@ int main(int argc, char **argv) {
 
     cl::Kernel *krnMethod2 = cluLoadKernel(prg, "method2");
 
-    n = 1024;
-    int k = 64;
+
 
 
     krnMethod2->setArg(0, buffer_);
@@ -179,7 +182,7 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueWriteBuffer(res_, false, 0, sizeof(int), nullptr);
     clu_Queue->finish();
 
-    clu_Queue->enqueueNDRangeKernel(*krnMethod1, cl::NullRange, cl::NDRange(n / k), cl::NDRange(32));
+    clu_Queue->enqueueNDRangeKernel(*krnMethod1, cl::NullRange, cl::NDRange(n / k), cl::NDRange(32), 0, &ev);
     clu_Queue->finish();
 
     clu_Queue->enqueueReadBuffer(res_, false, 0, sizeof(int), &resGPU);
@@ -199,13 +202,10 @@ int main(int argc, char **argv) {
     cl::Kernel *krnMethod3 = cluLoadKernel(prg, "method3");
 
 
-    n = 1024;
-    int s = 32;
-
 
     cl::Buffer res3_(*clu_Context, CL_MEM_READ_WRITE, s * sizeof(int));
 
-    int *table3_ = new int[s];
+    long *table3_ = new long[s];
 
     //Init du tableau
     for (int i = 0; i < s; i++) {
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueWriteBuffer(res3_, false, 0, s * sizeof(int), table3_);
     clu_Queue->finish();
 
-    clu_Queue->enqueueNDRangeKernel(*krnMethod1, cl::NullRange, cl::NDRange(n), cl::NDRange(32));
+    clu_Queue->enqueueNDRangeKernel(*krnMethod3, cl::NullRange, cl::NDRange(n), cl::NDRange(32), 0, &ev);
     clu_Queue->finish();
 
     clu_Queue->enqueueReadBuffer(res3_, false, 0, s * sizeof(int), table3_);

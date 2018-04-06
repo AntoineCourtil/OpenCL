@@ -25,22 +25,23 @@ int main(int argc, char **argv) {
     cl::Program *prg = cluLoadProgram(clu_file);
     cl::Kernel *krn = cluLoadKernel(prg, "pascal");
 
-    int width = 10;
-    int height = 10;
-    int n = width * height;
+//    int width = 10;
+//    int height = 10;
+//    int n = width * height;
+    int n = 10;
 
     //création du buffer = allocation mémoire du GPU
     cl::Buffer buffer(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
 
     krn->setArg(0, buffer);
-    krn->setArg(1, width);
+    krn->setArg(1, n);
 
     int *table = new int[n];
 
 
     //Init du tableau
     for (int i = 0; i < n; i++) {
-        table[i] = 1 ;
+        table[i] = 1;
     }
 
     //Init du buffer avec le tableau
@@ -69,19 +70,18 @@ int main(int argc, char **argv) {
 
     clu_Queue->finish();
 
-    for (int i = 0; i < width; i++) {
-        for (int j = 0; j < height; j++) {
-            if(table[i] != 0) {
-                cerr << table[i] << ", ";
-            }
-        }
-        cerr << endl;
+    for (int i = 0; i < n; i++) {
+        cerr << table[i] << ", ";
     }
 
     cerr << endl << endl;
 
     ev.wait();
     cluDisplayEventMilliseconds("kernel time", ev);
+
+
+    //suppression de mémoire
+    delete[](table);
 
 
     return 0;

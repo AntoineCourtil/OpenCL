@@ -25,11 +25,11 @@ int main(int argc, char **argv) {
     cl::Program *prg = cluLoadProgram(clu_file);
     cl::Kernel *krn = cluLoadKernel(prg, "addVector");
 
-    int n = 1024 * 1024 * 64;
+    int n = 1024 * 1024;
 
     //création du buffer = allocation mémoire du GPU
-    cl::Buffer bufferA(*clu_Context, CL_MEM_WRITE_ONLY, n * sizeof(int));
-    cl::Buffer bufferB(*clu_Context, CL_MEM_WRITE_ONLY, n * sizeof(int));
+    cl::Buffer bufferA(*clu_Context, CL_MEM_READ_ONLY, n * sizeof(int));
+    cl::Buffer bufferB(*clu_Context, CL_MEM_READ_ONLY, n * sizeof(int));
     cl::Buffer bufferC(*clu_Context, CL_MEM_WRITE_ONLY, n * sizeof(int));
 
     krn->setArg(0, bufferA);
@@ -54,7 +54,6 @@ int main(int argc, char **argv) {
     //init des buffers avec les tableaux
     clu_Queue->enqueueWriteBuffer(bufferA, false, 0, n * sizeof(int), tableA);
     clu_Queue->enqueueWriteBuffer(bufferB, false, 0, n * sizeof(int), tableB);
-
 
 
     cl::Event ev;
@@ -103,10 +102,53 @@ int main(int argc, char **argv) {
     cerr << "[CPU time] " << (tm_stop - tm_start) << " msecs" << endl;
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+    // Partie 2 Atomics
+
+
+    cl::Kernel *krn2 = cluLoadKernel(prg, "sumOfAll");
+
+    cl::Buffer bufferD(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
+    int *tableD = new int[n];
+
+    krn2->setArg(0, bufferD);
+
+    int init0 = 0;
+    clu_Queue->enqueueWriteBuffer(bufferD, false, 0, sizeof(int), &init0);
+
+    clu_Queue->enqueueNDRangeKernel(*krn2, cl::NullRange, cl::NDRange(n), cl::NDRange(32));
+
+    clu_Queue->enqueueReadBuffer(bufferD, false, 0, sizeof(int), &init0);
+
+    clu_Queue->finish();
+
+    for (int i = 0; i < n; i++) {
+        tableD[0]++;
+    }
+
+    cerr << endl << endl << "d[0] = " << init0 << endl;
+
+    ev.wait();
+    cluDisplayEventMilliseconds("kernel time", ev);
+
+
+
     //suppression de mémoire
     delete[](tableA);
     delete[](tableB);
     delete[](tableC);
+    delete[](tableD);
 
     return 0;
 }

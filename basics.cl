@@ -32,3 +32,8 @@ __kernel void addVector(__global int *a, __global int *b, __global int *c, int n
     c[k] = a[k] + b[k];
 
 }
+
+__kernel void sumOfAll(__global int *d){
+//    d[0] ++;
+    atomic_inc(d);
+}

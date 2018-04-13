@@ -174,6 +174,74 @@ int main(int argc, char **argv) {
     ///                 V3                  ///
     ///////////////////////////////////////////
 
+//    cerr << endl << endl;
+//
+//    swap = 0;
+//
+//    if (n % 256 != 0) {
+//        cerr << "error" << endl;
+//        return -1;
+//    }
+//
+//    //init des buffers avec les tableaux
+//    clu_Queue->enqueueWriteBuffer(*buffer[swap], false, 0, n * sizeof(int), table);
+//
+//    cl::Kernel *krnV3 = cluLoadKernel(prg, "reduceV3");
+//
+//    double total_chrono_V3 = 0;
+//
+//
+//    for (int i = n; i >= 256; i = i / 256) {
+//        krnV3->setArg(0, *buffer[swap]);
+//        krnV3->setArg(1, *buffer[1 - swap]);
+//        krnV3->setArg(2, i);
+//
+//
+//        int numT = i / 2;
+//        int numG = 256;
+//
+//
+//        cl::Event ev;
+//
+//        //Ordre par file de commande
+//        cl_int err = clu_Queue->enqueueNDRangeKernel(
+//                *krnV3, //kernel
+//                cl::NullRange, //NullRange
+//                cl::NDRange(numT), //NB de Threads
+//                cl::NDRange(numG), //Taille de groupe, n doit etre un multiple de taille de groupe
+//                0,
+//                &ev //Event de mesure de performances
+//        );
+//
+//
+//        cluCheckError(err, "Error executing kernel");
+//
+//        ev.wait();
+//
+//        total_chrono_V3 += cluEventMilliseconds(ev);
+//
+//
+//        swap = 1 - swap;
+//    }
+//
+//
+//    cerr << endl << "[+] V3, total time : " << total_chrono_V3 << endl;
+//
+//    int sumV3 = 0;
+//    clu_Queue->enqueueReadBuffer(*buffer[swap], true, 0, sizeof(int), &sumV3);
+//
+//    cerr << "   sumV3 : " << sumV3 << endl;
+//
+//
+//
+
+
+
+
+    ///////////////////////////////////////////
+    ///                 V4                  ///
+    ///////////////////////////////////////////
+
     cerr << endl << endl;
 
     swap = 0;
@@ -186,15 +254,15 @@ int main(int argc, char **argv) {
     //init des buffers avec les tableaux
     clu_Queue->enqueueWriteBuffer(*buffer[swap], false, 0, n * sizeof(int), table);
 
-    cl::Kernel *krnV3 = cluLoadKernel(prg, "reduceV3");
+    cl::Kernel *krnV4 = cluLoadKernel(prg, "reduceV4");
 
-    double total_chrono_V3 = 0;
+    double total_chrono_V4 = 0;
 
 
     for (int i = n; i >= 256; i = i / 256) {
-        krnV3->setArg(0, *buffer[swap]);
-        krnV3->setArg(1, *buffer[1 - swap]);
-        krnV3->setArg(2, i);
+        krnV4->setArg(0, *buffer[swap]);
+        krnV4->setArg(1, *buffer[1 - swap]);
+        krnV4->setArg(2, i);
 
 
         int numT = i / 2;
@@ -205,7 +273,7 @@ int main(int argc, char **argv) {
 
         //Ordre par file de commande
         cl_int err = clu_Queue->enqueueNDRangeKernel(
-                *krnV3, //kernel
+                *krnV4, //kernel
                 cl::NullRange, //NullRange
                 cl::NDRange(numT), //NB de Threads
                 cl::NDRange(numG), //Taille de groupe, n doit etre un multiple de taille de groupe
@@ -218,19 +286,19 @@ int main(int argc, char **argv) {
 
         ev.wait();
 
-        total_chrono_V3 += cluEventMilliseconds(ev);
+        total_chrono_V4 += cluEventMilliseconds(ev);
 
 
         swap = 1 - swap;
     }
 
 
-    cerr << endl << "[+] V3, total time : " << total_chrono_V3 << endl;
+    cerr << endl << "[+] V4, total time : " << total_chrono_V4 << endl;
 
-    int sumV3 = 0;
-    clu_Queue->enqueueReadBuffer(*buffer[swap], true, 0, sizeof(int), &sumV3);
+    int sumV4 = 0;
+    clu_Queue->enqueueReadBuffer(*buffer[swap], true, 0, sizeof(int), &sumV4);
 
-    cerr << "   sumV3 : " << sumV3 << endl;
+    cerr << "   sumV4 : " << sumV4 << endl;
 
 
     delete[](table);

@@ -33,25 +33,25 @@ __kernel void reduceV3(__global int *a, __global int *b, int i) {
 
     for (int j = 1; j <= 9; j++) {
         int v0, v1;
-        bool active = lid < (1 << (9 - j));
+        bool active = lid < (1 << (8 - j));
 
 
         if (active) { //Thread active ?
             //read values
-            v0 = a[gid * 512 + lid * 2];
-            v1 = a[gid * 512 + lid * 2 + 1];
+            v0 = a[gid * 256 + lid * 2];
+            v1 = a[gid * 256 + lid * 2 + 1];
         }
 
         barrier(CLK_GLOBAL_MEM_FENCE);
 
         if (active) { //Thread active ?
             //write value
-            a[gid * 512 + lid] = v0 + v1;
+            a[gid * 256 + lid] = v0 + v1;
         }
 
         barrier(CLK_GLOBAL_MEM_FENCE);
     }
 
-    b[gid] = a[gid * 512];
+    b[gid] = a[gid * 256];
 
 }

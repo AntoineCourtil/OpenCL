@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
     cl::Program *prg = cluLoadProgram(clu_file);
     cl::Kernel *krnV1 = cluLoadKernel(prg, "reduceV1");
 
-    int p2 = 16;
+    int p2 = 8*3;
     int n = (1 << p2);
 
     //création du buffer = allocation mémoire du GPU
@@ -177,8 +177,6 @@ int main(int argc, char **argv) {
     cerr << endl << endl;
 
     swap = 0;
-    p2 = 9*3; // 9 = 512
-    n = (1 << p2);
 
     if (n % 256 != 0) {
         cerr << "error" << endl;
@@ -193,7 +191,7 @@ int main(int argc, char **argv) {
     double total_chrono_V3 = 0;
 
 
-    for (int i = n; i >= 512; i = i / 512) {
+    for (int i = n; i >= 256; i = i / 256) {
         krnV3->setArg(0, *buffer[swap]);
         krnV3->setArg(1, *buffer[1 - swap]);
         krnV3->setArg(2, i);

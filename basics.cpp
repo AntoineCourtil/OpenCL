@@ -96,6 +96,90 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueReadBuffer(*buffer[swap], true, 0, sizeof(int), &sumV1);
 
     cerr << "   sumV1 : " << sumV1 <<endl;
+    
+    
+    
+    
+    
+    
+    
+    ///////////////////////////////////////////
+    ///                 V2                  ///
+    ///////////////////////////////////////////
+
+
+    cerr << endl << endl;
+
+    //init des buffers avec les tableaux
+    clu_Queue->enqueueWriteBuffer(*buffer[swap], false, 0, n * sizeof(int), table);
+
+    cl::Kernel *krnV2 = cluLoadKernel(prg, "reduceV2");
+
+    //Init du tableau
+    for (int i = 0; i < n; i++) {
+        table[i] = 1;
+    }
+
+    double total_chrono_V2 = 0;
+
+    for (int i = 1; i <= p2; i++) {
+        krnV2->setArg(0, *buffer[swap]);
+        krnV2->setArg(1, *buffer[1 - swap]);
+        krnV2->setArg(2, i);
+
+
+        int numT = n / (1 << i);
+        int numG = min(32, n / (1 << i));
+
+
+        cl::Event ev;
+
+        //Ordre par file de commande
+        cl_int err = clu_Queue->enqueueNDRangeKernel(
+                *krnV2, //kernel
+                cl::NullRange, //NullRange
+                cl::NDRange(numT), //NB de Threads
+                cl::NDRange(numG), //Taille de groupe, n doit etre un multiple de taille de groupe
+                0,
+                &ev //Event de mesure de performances
+        );
+
+
+        cluCheckError(err, "Error executing kernel");
+
+        ev.wait();
+
+        total_chrono_V2 += cluEventMilliseconds(ev);
+
+
+        swap = 1 - swap;
+
+
+        cerr << "Pass " << i << " | numT : " << numT << " | numG : " << numG << endl;
+
+
+    }
+
+
+    cerr << endl << "[+] V2, total time : " << total_chrono_V2 << endl;
+
+    int sumV2 = 0;
+    clu_Queue->enqueueReadBuffer(*buffer[swap], true, 0, sizeof(int), &sumV2);
+
+    cerr << "   sumV2 : " << sumV2 <<endl;
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
 
     delete[](table);

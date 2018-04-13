@@ -1,39 +1,12 @@
 
-/**
- *
- * Casse la coalescence
- *
- */
-int F(int id, int n){
-    const int SZ = 1024;
+__kernel void reduceV1(__global const int *a, __global int *b, int i){
 
-    int bloc = id % SZ;
-    int cell = id / SZ;
+    int tid = get_global_id(0);
+    int u = tid * (1<<i);
+    int v = tid * (1<<i) + (1<<(i-1));
 
-    return bloc * SZ + cell;
+    int sum = a[u] + a[v];
 
-    const int N = n;
-    const int S = 2; //décalage du prochain voisin
-    const int B = N / S;
+    b[u] = sum;
 
-    int bloc2 = id % S;
-    int cell2 = id / S;
-    return (bloc2 * B) + cell2;
-
-}
-
-
-__kernel void addVector(__global int *a, __global int *b, __global int *c, int n){
-
-    int id = get_global_id(0);
-
-    int k = F(id, n);
-
-    c[k] = a[k] + b[k];
-
-}
-
-__kernel void sumOfAll(__global int *d){
-//    d[0] ++;
-    atomic_inc(d);
 }

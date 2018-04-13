@@ -23,132 +23,82 @@ int main(int argc, char **argv) {
     cluInit();
 
     cl::Program *prg = cluLoadProgram(clu_file);
-    cl::Kernel *krn = cluLoadKernel(prg, "addVector");
+    cl::Kernel *krnV1 = cluLoadKernel(prg, "reduceV1");
 
-    int n = 1024 * 1024;
+    int p2 = 16;
+    int n = (1 << p2);
 
     //création du buffer = allocation mémoire du GPU
-    cl::Buffer bufferA(*clu_Context, CL_MEM_READ_ONLY, n * sizeof(int));
-    cl::Buffer bufferB(*clu_Context, CL_MEM_READ_ONLY, n * sizeof(int));
-    cl::Buffer bufferC(*clu_Context, CL_MEM_WRITE_ONLY, n * sizeof(int));
+    cl::Buffer bufferA(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
+    cl::Buffer bufferB(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
 
-    krn->setArg(0, bufferA);
-    krn->setArg(1, bufferB);
-    krn->setArg(2, bufferC);
-    krn->setArg(3, n);
+    cl::Buffer *buffer[2];
+    buffer[0] = &bufferA;
+    buffer[1] = &bufferB;
 
-    int *tableA = new int[n];
-    int *tableB = new int[n];
-    int *tableC = new int[n];
+    int swap = 0;
+    int *table = new int[n];
+    double total_chrono_V1 = 0;
 
 
-    //Init des tableaux A et B
+    //Init du tableau
     for (int i = 0; i < n; i++) {
-        tableA[i] = i ;
+        table[i] = 1;
     }
 
-    for (int i = 0; i < n; i++) {
-        tableB[i] = n-i ;
-    }
 
     //init des buffers avec les tableaux
-    clu_Queue->enqueueWriteBuffer(bufferA, false, 0, n * sizeof(int), tableA);
-    clu_Queue->enqueueWriteBuffer(bufferB, false, 0, n * sizeof(int), tableB);
+    clu_Queue->enqueueWriteBuffer(*buffer[swap], false, 0, n * sizeof(int), table);
 
 
-    cl::Event ev;
-
-    //Ordre par file de commande
-    cl_int err = clu_Queue->enqueueNDRangeKernel(
-            *krn, //kernel
-            cl::NullRange, //NullRange
-            cl::NDRange(n), //NB de Threads
-            cl::NDRange(32), //Taille de groupe, n doit etre un multiple de taille de groupe
-            0,
-            &ev //Event de mesure de performances
-    );
+    for (int i = 1; i <= p2; i++) {
+        krnV1->setArg(0, *buffer[swap]);
+        krnV1->setArg(1, *buffer[1 - swap]);
+        krnV1->setArg(2, i);
 
 
-    cluCheckError(err, "Error executing kernel");
+        int numT = n / (1 << i);
+        int numG = min(32, n / (1 << i));
 
 
+        cl::Event ev;
 
-    //int table[n]; //mémoire sur pile d'éxécution + pas de variable n dans la déclaration
+        //Ordre par file de commande
+        cl_int err = clu_Queue->enqueueNDRangeKernel(
+                *krnV1, //kernel
+                cl::NullRange, //NullRange
+                cl::NDRange(numT), //NB de Threads
+                cl::NDRange(numG), //Taille de groupe, n doit etre un multiple de taille de groupe
+                0,
+                &ev //Event de mesure de performances
+        );
 
-    //int table[1024]; //pareil mémoire sur pile d'éxécution, + si grosse structure = égale car pas assez de place
+
+        cluCheckError(err, "Error executing kernel");
+
+        ev.wait();
+
+        total_chrono_V1 += cluEventMilliseconds(ev);
 
 
+        swap = 1 - swap;
 
-    //copie de bufferC dans tableC
-    clu_Queue->enqueueReadBuffer(bufferC, false, 0, n * sizeof(int), tableC);
 
-    clu_Queue->finish();
+        cerr << "Pass " << i << " | numT : " << numT << " | numG : " << numG << endl;
 
-    for (int i = 0; i < 10; i++) {
-        cerr << tableC[i] << ", ";
+
     }
 
-    cerr << endl << endl;
 
-    ev.wait();
-    cluDisplayEventMilliseconds("kernel time", ev);
+    cerr << endl << "[+] V1, total time : " << total_chrono_V1 << endl;
 
+    int sumV1 = 0;
+    clu_Queue->enqueueReadBuffer(*buffer[swap], true, 0, sizeof(int), &sumV1);
 
-    long long tm_start = cluCPUMilliseconds();
-    for (int i = 0; i < n; i++) {
-        tableC[i] = tableA[i] + tableB[i] ;
-    }
-    long long tm_stop = cluCPUMilliseconds();
-    cerr << "[CPU time] " << (tm_stop - tm_start) << " msecs" << endl;
+    cerr << "   sumV1 : " << sumV1 <<endl;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-    // Partie 2 Atomics
-
-
-    cl::Kernel *krn2 = cluLoadKernel(prg, "sumOfAll");
-
-    cl::Buffer bufferD(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
-    int *tableD = new int[n];
-
-    krn2->setArg(0, bufferD);
-
-    int init0 = 0;
-    clu_Queue->enqueueWriteBuffer(bufferD, false, 0, sizeof(int), &init0);
-
-    clu_Queue->enqueueNDRangeKernel(*krn2, cl::NullRange, cl::NDRange(n), cl::NDRange(32));
-
-    clu_Queue->enqueueReadBuffer(bufferD, false, 0, sizeof(int), &init0);
-
-    clu_Queue->finish();
-
-    for (int i = 0; i < n; i++) {
-        tableD[0]++;
-    }
-
-    cerr << endl << endl << "d[0] = " << init0 << endl;
-
-    ev.wait();
-    cluDisplayEventMilliseconds("kernel time", ev);
-
-
-
-    //suppression de mémoire
-    delete[](tableA);
-    delete[](tableB);
-    delete[](tableC);
-    delete[](tableD);
+    delete[](table);
 
     return 0;
 }

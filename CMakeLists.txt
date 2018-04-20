@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project(ex1)
+project(OpenCL)
 
 include_directories(
         lib/

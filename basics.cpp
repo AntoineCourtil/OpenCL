@@ -28,6 +28,7 @@ int main(int argc, char **argv) {
     int p2 = 20;
     int n = (1 << p2);
     int k = 128;
+    int groupSize = (1 << 10);
 
     //création du buffer = allocation mémoire du GPU
     cl::Buffer bufferA(*clu_Context, CL_MEM_READ_WRITE, n * sizeof(int));
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
 
     //Init du tableau
     for (int i = 0; i < n; i++) {
-        table[i] = 2*i;
+        table[i] = i;
         wsums[i] = 0;
     }
 
@@ -61,7 +62,64 @@ int main(int argc, char **argv) {
             *kernel, //kernel
             cl::NullRange, //NullRange
             cl::NDRange(n), //NB de Threads
-            cl::NDRange((1<<10)), //Taille de groupe, n doit etre un multiple de taille de groupe
+            cl::NDRange(groupSize), //Taille de groupe, n doit etre un multiple de taille de groupe
+            0,
+            &ev //Event de mesure de performances
+    );
+
+
+    cluCheckError(err, "Error executing kernel");
+
+    ev.wait();
+
+    cluDisplayEventMilliseconds("[+] kernel time", ev);
+    cerr << endl;
+
+
+    clu_Queue->enqueueReadBuffer(bufferB, true, 0, n * sizeof(int), wsums);
+
+
+    for (int i = 0; i < 10; i++) {
+        cerr << wsums[i] << " " << endl;
+    }
+
+
+    ///////////////////////////////////
+    ///             V2              ///
+    ///////////////////////////////////
+
+    cerr << endl << endl << "#####   V2   #####" << endl << endl << endl;
+
+
+    kernel = cluLoadKernel(prg, "wsumsV2");
+
+    kernel->setArg(0, bufferA);
+    kernel->setArg(1, bufferB);
+    kernel->setArg(2, cl::__local((groupSize + (2 * k)) * sizeof(int)));
+    kernel->setArg(3, n);
+    kernel->setArg(4, k);
+    kernel->setArg(5, groupSize);
+
+
+    //Init du tableau
+    for (int i = 0; i < n; i++) {
+        table[i] = i;
+        wsums[i] = 0;
+    }
+
+
+    //init des buffers avec les tableaux
+    clu_Queue->enqueueWriteBuffer(bufferA, true, 0, n * sizeof(int), table);
+    clu_Queue->enqueueWriteBuffer(bufferB, true, 0, n * sizeof(int), wsums);
+
+
+
+    //Ordre par file de commande
+    err = clu_Queue->enqueueNDRangeKernel(
+            *kernel, //kernel
+            cl::NullRange, //NullRange
+            cl::NDRange(n), //NB de Threads
+            cl::NDRange(groupSize), //Taille de groupe, n doit etre un multiple de taille de groupe
             0,
             &ev //Event de mesure de performances
     );
@@ -85,6 +143,7 @@ int main(int argc, char **argv) {
 
     delete[](table);
     delete[](wsums);
+
 
     return 0;
 }

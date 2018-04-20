@@ -27,18 +27,15 @@ __kernel void wsumsV2(__global const int *a, __global int *b, __local int *tmp, 
     if(gid == 0 && lid == 0) {
         for (int i = 0; i <= k; i++) {
             tmp[i] = 0;
+            tmp[groupSize-i] = a[id+k+groupSize+i];
         }
     } else {
 
         if(lid == 0){
             for (int i = 0; i <= k; i++) {
                 tmp[i] = a[id-k+i];
-            }
-        }
 
-        if(lid == k+1){
-            for (int i = 0; i <= k; i++) {
-                tmp[i] = a[id-k+i];
+                tmp[k+groupSize+i] = 999999999999999;
             }
         }
 

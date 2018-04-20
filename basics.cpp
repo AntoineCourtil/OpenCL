@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueReadBuffer(bufferB, true, 0, n * sizeof(int), wsums);
 
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 1000; i < 1028; i++) {
         cerr << wsums[i] << " " << endl;
     }
 
@@ -136,7 +136,7 @@ int main(int argc, char **argv) {
     clu_Queue->enqueueReadBuffer(bufferB, true, 0, n * sizeof(int), wsums);
 
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 1000; i < 1028; i++) {
         cerr << wsums[i] << " " << endl;
     }
 

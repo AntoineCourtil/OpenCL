@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
 
 
     delete[](table);
+    delete[](wsums);
 
     return 0;
 }
